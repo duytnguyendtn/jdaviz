@@ -102,11 +102,12 @@ class Launcher(v.VuetifyTemplate):
     mosviz_icon = Unicode(read_icon(os.path.join(ICON_DIR, 'mosviz_icon.svg'), 'svg+xml')).tag(sync=True)  # noqa
     imviz_icon = Unicode(read_icon(os.path.join(ICON_DIR, 'imviz_icon.svg'), 'svg+xml')).tag(sync=True)  # noqa
 
-    def __init__(self, main, configs=ALL_JDAVIZ_CONFIGS, *args, **kwargs):
+    def __init__(self, main, configs=ALL_JDAVIZ_CONFIGS, height=450, *args, **kwargs):
         self.vdocs = 'latest' if 'dev' in __version__ else 'v'+__version__
         
         self.main = main
         self.configs = configs
+        self.height = height
         # Set all configs to compatible at first load (for loading blank config)
         self.compatible_configs = configs
 
@@ -162,11 +163,13 @@ class Launcher(v.VuetifyTemplate):
 
     def vue_launch_config(self, config):
         helper = _launch_config_with_data(config, self.loaded_data, show=False)
+        helper.app.layout.height = f"{self.height}px"
+        self.main.color = 'transparent'
         self.main.children = [helper.app]
 
-def show_launcher(configs=ALL_JDAVIZ_CONFIGS):
-    # Color defined manually due to the custom theme not being defined yet (in app.vue)
-    main = v.Sheet(class_="mx-0", color="#153A4B", _metadata={'mount_id': 'content'})
-    main.children = [Launcher(main, configs)]
+
+def show_launcher(configs=ALL_JDAVIZ_CONFIGS, height=450):
+    main = v.Sheet(class_="mx-0", color="#153A4B", height=f"{height}px", _metadata={'mount_id': 'content'})
+    main.children = [Launcher(main, configs, height)]
 
     return main
