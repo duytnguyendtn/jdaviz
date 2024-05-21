@@ -4,6 +4,14 @@
     :link="'https://www.ivoa.net/astronomers/index.html'"
     :popout_button="popout_button">
 
+    <plugin-viewer-select
+       :items="viewer_items"
+       :selected.sync="viewer_selected"
+       label="Viewer"
+       :show_if_single_entry="false"
+       hint="Select a viewer to search."
+    />
+
     <j-plugin-section-header>Survey Collections</j-plugin-section-header>
       <v-row>
         <v-select
@@ -39,6 +47,19 @@
           hint="Enter a source name or ICRS coordinates in degrees to center your query on"
           persistent-hint>
           </v-text-field>
+      </v-row>
+
+      <v-row>
+        <v-select
+          v-model="coordframe_selected"
+          :menu-props="{ left: true }"
+          attach
+          :items="coordframes"
+          @change="coordframe_selected"
+          label="Coordinate Frame"
+          hint="Astronomical Coordinate Frame of the provided Coordinates"
+          persistent-hint
+        ></v-select>
       </v-row>
 
     <j-plugin-section-header>Common Options</j-plugin-section-header>

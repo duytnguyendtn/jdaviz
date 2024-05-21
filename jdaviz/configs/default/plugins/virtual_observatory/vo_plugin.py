@@ -1,29 +1,33 @@
+from astropy.coordinates.builtin_frames import __all__ as all_astropy_frames
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
 from astropy import units as u
+
 from pyvo.utils import vocabularies
 from pyvo import registry
 from pyvo.dal.exceptions import DALFormatError
 from requests.exceptions import ConnectionError as RequestConnectionError
 from traitlets import Dict, Bool, Unicode, Any, List, Int
 
-from jdaviz.core.events import SnackbarMessage
+from jdaviz.core.events import SnackbarMessage, AddDataMessage, RemoveDataMessage
 from jdaviz.core.registries import tray_registry
-from jdaviz.core.template_mixin import PluginTemplateMixin, AddResultsMixin, TableMixin
+from jdaviz.core.template_mixin import PluginTemplateMixin, AddResultsMixin, TableMixin, ViewerSelectMixin
 
 __all__ = ['VoPlugin']
 
 
 @tray_registry('VoPlugin', label="Virtual Observatory")
-class VoPlugin(PluginTemplateMixin, AddResultsMixin, TableMixin):
+class VoPlugin(PluginTemplateMixin, AddResultsMixin, TableMixin, ViewerSelectMixin):
     """ Plugin to query the Virtual Observatory and load data into Imviz """
     template_file = __file__, "vo_plugin.vue"
 
     wavebands = List().tag(sync=True)
     resources = List([]).tag(sync=True)
-    resources_loading = Bool(False).tag(sync=True)
+    resources_loading= Bool(False).tag(sync=True)
 
-    source = Unicode().tag(sync=True)
+    source = Unicode('').tag(sync=True)
+    coordframes = List([]).tag(sync=True)
+    coordframe_selected = Unicode('ICRS').tag(sync=True)
     radius_deg = Int(1).tag(sync=True)
 
     results_loading = Bool(False).tag(sync=True)
@@ -39,12 +43,53 @@ class VoPlugin(PluginTemplateMixin, AddResultsMixin, TableMixin):
         self._full_registry_results = None
         self.resource_selected = None
 
+        self.coordframes = [frame.lower() for frame in all_astropy_frames]
+
         self.table.headers_avail = ["Title", "Instrument", "DateObs", "URL"]
         self.table.headers_visible = ["Title", "Instrument", "DateObs"]
         self._populate_url_only = False
 
         self.table.show_rowselect = True
         self.table.item_key = "URL"
+
+        self.hub.subscribe(self, AddDataMessage, handler=self._center_on_data)
+        self.hub.subscribe(self, RemoveDataMessage, handler=self._center_on_data)
+
+        self.previous_autogen_source = None
+
+
+    def _center_on_data(self, _):
+        """
+        If the 
+        """
+        # This plugin should not overwrite existing user input.
+        # Immediately exit if the user has entered a value
+        if self.source not in ('', self.previous_autogen_source):
+            return
+
+        # gets the current viewer
+        viewer = self.viewer.selected_obj
+
+        # nothing happens in the case there is no image in the viewer
+        # additionally if the data does not have WCS
+        if viewer.state.reference_data is None or viewer.state.reference_data.coords is None:
+            return
+
+        # obtains the center point of the current image and converts the point into sky coordinates
+        x_center = (viewer.state.x_min + viewer.state.x_max) * 0.5
+        y_center = (viewer.state.y_min + viewer.state.y_max) * 0.5
+        skycoord_center = viewer.state.reference_data.coords.pixel_to_world(x_center, y_center)
+
+        # Extract SkyCoord values as strings for plugin display
+        ra_deg = skycoord_center.ra.deg
+        dec_deg = skycoord_center.dec.deg
+        frame = skycoord_center.frame.name.lower()
+
+        # Show center value in plugin
+        self.source = f"{ra_deg} {dec_deg}"
+        self.coordframe_selected = frame
+        self.previous_autogen_source = self.source
+
 
     def vue_waveband_selected(self,event):
         """ Sync waveband selected
@@ -74,6 +119,10 @@ class VoPlugin(PluginTemplateMixin, AddResultsMixin, TableMixin):
     def vue_resource_selected(self, event):
         """Sync IVOA resource selected"""
         self.resource_selected = event
+
+    def vue_coordframe_selected(self, event):
+        """Sync IVOA resource selected"""
+        self.coordframe_selected = event
 
     def vue_query_resource(self, *args, **kwargs):
         """
