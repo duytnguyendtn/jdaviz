@@ -17,7 +17,7 @@ __all__ = ['VoPlugin']
 
 
 @tray_registry('VoPlugin', label="Virtual Observatory")
-class VoPlugin(PluginTemplateMixin, AddResultsMixin, TableMixin, ViewerSelectMixin):
+class VoPlugin(TemplateMixin, AddResultsMixin, TableMixin):
     """ Plugin to query the Virtual Observatory and load data into Imviz """
     template_file = __file__, "vo_plugin.vue"
 

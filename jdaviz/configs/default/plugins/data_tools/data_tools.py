@@ -3,6 +3,7 @@ import os
 from traitlets import Unicode, Bool
 
 from jdaviz.configs.default.plugins.data_tools.file_chooser import FileChooser
+from jdaviz.configs.default.plugins.virtual_observatory import VoPlugin
 from jdaviz.core.registries import tool_registry
 from jdaviz.core.template_mixin import TemplateMixin
 
@@ -22,8 +23,10 @@ class DataTools(TemplateMixin):
         start_path = os.environ.get('JDAVIZ_START_DIR', os.path.curdir)
 
         self._file_upload = FileChooser(start_path)
+        self._vo_plugin = VoPlugin()
 
-        self.components = {'g-file-import': self._file_upload}
+        self.components = {'g-file-import': self._file_upload, 'g-vo-plugin:': self._vo_plugin}
+        #self.components = {'g-file-import': self._file_upload}
 
         self._file_upload.observe(self._on_file_path_changed, names='file_path')
 
