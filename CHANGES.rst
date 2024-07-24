@@ -134,6 +134,8 @@ Cubeviz
 Imviz
 ^^^^^
 
+- Virtual Observatory plugin to query resources and download data products. [#2872]
+
 Mosviz
 ^^^^^^
 
